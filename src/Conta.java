@@ -1,4 +1,12 @@
+import lombok.Getter;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Getter
 public abstract class Conta implements IConta {
 	
 	private static final int AGENCIA_PADRAO = 1;
@@ -6,41 +14,38 @@ public abstract class Conta implements IConta {
 
 	protected int agencia;
 	protected int numero;
-	protected double saldo;
+	protected BigDecimal saldo;
 	protected Cliente cliente;
+	protected List<Movimentacao> movimentacoes;
 
 	public Conta(Cliente cliente) {
 		this.agencia = Conta.AGENCIA_PADRAO;
 		this.numero = SEQUENCIAL++;
+		this.saldo = BigDecimal.ZERO;
 		this.cliente = cliente;
+		this.movimentacoes = new ArrayList<>();
 	}
 
 	@Override
-	public void sacar(double valor) {
-		saldo -= valor;
+	public void sacar(BigDecimal valor) {
+		saldo = saldo.subtract(valor);
+		Movimentacao novaMovimentacao = new Movimentacao(UUID.randomUUID(), valor, LocalDateTime.now(), TipoOperacao.SAQUE);
+		movimentacoes.add(novaMovimentacao);
 	}
 
 	@Override
-	public void depositar(double valor) {
-		saldo += valor;
+	public void depositar(BigDecimal valor) {
+		saldo = saldo.add(valor);
+		Movimentacao novaMovimentacao = new Movimentacao(UUID.randomUUID(), valor, LocalDateTime.now(), TipoOperacao.DEPOSITO);
+		movimentacoes.add(novaMovimentacao);
 	}
 
 	@Override
-	public void transferir(double valor, IConta contaDestino) {
+	public void transferir(BigDecimal valor, IConta contaDestino) {
 		this.sacar(valor);
 		contaDestino.depositar(valor);
-	}
-
-	public int getAgencia() {
-		return agencia;
-	}
-
-	public int getNumero() {
-		return numero;
-	}
-
-	public double getSaldo() {
-		return saldo;
+		Movimentacao novaMovimentacao = new Movimentacao(UUID.randomUUID(), valor, LocalDateTime.now(), this, contaDestino, TipoOperacao.TRANSFERENCIA);
+		movimentacoes.add(novaMovimentacao);
 	}
 
 	protected void imprimirInfosComuns() {
